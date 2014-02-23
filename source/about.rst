@@ -6,7 +6,7 @@
 Nikhilは2つのライブラリの意味に関して記載されているMarc Lehmannによるlibevについての素晴らしい `man page
 <http://pod.tst.eu/http://cvs.schmorp.de/libev/ev.pod>`_ のおかげでこの書籍を執筆することができました。
 
-この書籍は `Sphinx <http://sphinx.pocoo.org/>` と `vim
+この書籍は `Sphinx <http://sphinx.pocoo.org/>`_ と `vim
 <http://www.vim.org>`_ によって作成されました。
 
 ライセンス
