@@ -1,62 +1,38 @@
-Introduction
+イントロダクション
 ============
 
-This 'book' is a small set of tutorials about using libuv_ as
-a high performance evented I/O library which offers the same API on Windows and Unix.
+この'書籍'はWindowsとUnixで同じAPIを提供するハイパフォーマンスなイベント駆動(evented)I/Oライブラリとしてlibuvを使うためのチュートリアルです。
 
-It is meant to cover the main areas of libuv, but is not a comprehensive
-reference discussing every function and data structure. The `official libuv
-documentation`_ is included directly in the libuv header file.
+この書籍はlibuvの主要な部分について言及するよう意図していますが、全ての関数やデータ構造を扱うリファレンスではありません。 `公式のlibuvのドキュメント`_ はlibuvのヘッダファイル自身に含まれています。
 
-.. _official libuv documentation: https://github.com/joyent/libuv/blob/master/include/uv.h
+.. _公式のlibuvのドキュメント: https://github.com/joyent/libuv/blob/master/include/uv.h
 
-This book is still a work in progress, so sections may be incomplete, but
-I hope you will enjoy it as it grows.
+この書籍はまだ執筆中であるため不完全ですが、成長するにつれて読み応えがあるものになるでしょう。
 
-Who this book is for
+想定読者
 --------------------
 
-If you are reading this book, you are either:
+この書籍の読者は下記のいずれかを想定しています:
 
-1) a systems programmer, creating low-level programs such as daemons or network
-   services and clients. You have found that the event loop approach is well
-   suited for your application and decided to use libuv.
+1) デーモンかネットワークサービスとクライアントのようなローレベルのプログラムを作成するシステムプログラマ。イベントループのアプローチがあなたのアプリケーションに適していることを発見し、libuvを使おうと思うでしょう。
 
-2) a node.js module writer, who wants to wrap platform APIs
-   written in C or C++ with a set of (a)synchronous APIs that are exposed to
-   JavaScript. You will use libuv purely in the context of node.js. For
-   this you will require some other resources as the book does not cover parts
-   specific to v8/node.js.
+2) C/C++で書かれたプラットフォームのAPIを、Javascriptに公開された(非)同期のAPI群と共にラップしたいnode.jsモジュールの作者。あなたはlibuvを純粋にnode.jsのコンテキストで使用するでしょう。この用途では、この書籍では言及しないv8/node.jsに特有の部品のための他の資料が必要となるでしょう。
 
-This book assumes that you are comfortable with the C programming language.
+この本はあなたがC言語に慣れていることを仮定しています。
 
-Background
+背景
 ----------
 
-The node.js_ project began in 2009 as a JavaScript environment decoupled
-from the browser. Using Google's V8_ and Marc Lehmann's libev_, node.js
-combined a model of I/O -- evented -- with a language that was well suited to
-the style of programming; due to the way it had been shaped by browsers. As
-node.js grew in popularity, it was important to make it work on Windows, but
-libev ran only on Unix. The Windows equivalent of kernel event notification
-mechanisms like kqueue or (e)poll is IOCP. libuv was an abstraction around libev
-or IOCP depending on the platform, providing users an API based on libev.
-In the node-v0.9.0 version of libuv `libev was removed`_.
+node.js_ プロジェクトはブラウザと分離されたJavascript環境として2009年に開始されました。Googleの V8_ とMarc Lehmannの libev_ を用いることによって、node.jsはイベント駆動のI/Oモデルとブラウザのために形成されたプログラミングスタイルに適した言語とを結びつけました。node.jsが知名度を増すにつれて、Windows上で動作することが重要となりましたが、libevはUnixに依存して動作していました。kqueueか(e)pollのようなイベント通知機構のWindowsで等価なものはIOCPです。libuvはプラットフォームに依存してlibevとIOCPを抽象化するモジュールであり、libevをベースにしたAPIをユーザに提供します。node.jsのv0.9.0でlibuvが採用され、 `libev was removed`_ となりました。
 
-Since then libuv has continued to mature and become a high quality standalone
-library for system programming. Users outside of node.js include Mozilla's
-Rust_ programming language, and a variety_ of language bindings.
+それからlibuvは成熟を続け、システムプログラミングのための高品質な単独のライブラリとなりました。node.js以外のユーザにはMozzilaの Rust_ プログラミング言語と、 `様々な`_ 言語 のバインディングなどが含まれます。
 
-The first independently release version of libuv was 0.10.2.
+libuvの最初の独立したリリースのバージョンは0.10.2でした。
 
-Code
+コード
 ----
 
-All the code from this book is included as part of the source of the book on
-Github. `Clone`_/`Download`_ the book and run ``make`` in the ``code/``
-folder to compile all the examples. This book and the code is based on libuv
-version `v0.11.1`_ and a version is included in the ``libuv/`` folder
-which will be compiled automatically.
+この書籍に含まれる全てのコードはGithub上の書籍のソースの一部として含まれています。サンプルの全てをコンパイルするには、この本を `Clone`_ もしくは `Download`_ し、 ``code/`` フォルダで ``make`` を実行してください。この書籍とコードはlibuvのv0.11.1をもとにしており、このバージョンは ``libuv/`` フォルダに含まれ自動的にコンパイルされるようになっています。
 
 .. _Clone: https://github.com/nikhilm/uvbook
 .. _Download: https://github.com/nikhilm/uvbook/downloads
@@ -67,4 +43,4 @@ which will be compiled automatically.
 .. _node.js: http://www.nodejs.org
 .. _libev was removed: https://github.com/joyent/libuv/issues/485
 .. _Rust: http://rust-lang.org
-.. _variety: https://github.com/joyent/libuv/wiki/Projects-that-use-libuv
+.. _様々な: https://github.com/joyent/libuv/wiki/Projects-that-use-libuv
