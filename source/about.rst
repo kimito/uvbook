@@ -1,27 +1,16 @@
-About
+この書籍について
 =====
 
-`Nikhil Marathe <http://nikhilism.com>`_ started writing this book one
-afternoon (June 16, 2012) when he didn't feel like programming. He had recently
-been stung by the lack of good documentation on libuv while working on
-`node-taglib <https://github.com/nikhilm/node-taglib>`_. Although reference
-documentation was present, there were no comprehensive tutorials. This book is
-the output of that need and tries to be accurate. That said, Nikhil is young
-and inexperienced and may be severely wrong at points. He encourages you to
-`call him out <nsm.nikhil@gmail.com>`_ if you find an error. You can contribute
-to the book by `forking the repository <https://github.com/nikhilm/uvbook>`_
-and sending a pull request.
+`Nikhil Marathe <http://nikhilism.com>`_ はプログラミングをする気のなかったある日(2012年6月16日)の午後にこの書籍を書き始めました。彼は `node-taglib <https://github.com/nikhilm/node-taglib>`_ の仕事をしている間、libuvのよいドキュメントのなさに苦しめられていました。リファレンスが存在しているのにも関わらず、包括的なチュートリアルがありませんでした。この書籍はその要求に対するアウトプットであり、正確を期す努力をしています。それは、Nikhilが若く未熟であり、ある点でひどく誤っている可能性があるということです。もしあなたが間違いを見つけた場合、彼はあなたに `教えて <nsm.nikhil@gmail.com>`_ ほしいと思っています。また、 `レポジトリをfork <https://github.com/nikhilm/uvbook>`_ し、pull reqestを送ることによりこの書籍に貢献することができます。
 
-Nikhil is indebted to Marc Lehmann's comprehensive `man page
-<http://pod.tst.eu/http://cvs.schmorp.de/libev/ev.pod>`_ about libev which
-describes much of the semantics of the two libraries.
+Nikhilは2つのライブラリの意味に関して記載されているMarc Lehmannによるlibevについての素晴らしい `man page
+<http://pod.tst.eu/http://cvs.schmorp.de/libev/ev.pod>`_ のおかげでこの書籍を執筆することができました。
 
-This book was made using `Sphinx <http://sphinx.pocoo.org/>`_ and `vim
-<http://www.vim.org>`_.
+この書籍は `Sphinx <http://sphinx.pocoo.org/>` と `vim
+<http://www.vim.org>`_ によって作成されました。
 
-Licensing
+ライセンス
 ---------
 
-The contents of this book are licensed as `Creative Commons - Attribution
-<http://creativecommons.org/licenses/by/3.0/>`_. All code is in the **public
-domain**.
+この書籍の内容は `Creative Commons - Attribution
+<http://creativecommons.org/licenses/by/3.0/>`_ に基いてライセンスされています。すべてのコードは **public domain** です。
