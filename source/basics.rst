@@ -1,19 +1,12 @@
-Basics of libuv
+libuvの基礎
 ===============
 
-libuv enforces an **asynchronous**, **event-driven** style of programming.  Its
-core job is to provide an event loop and callback based notifications of I/O
-and other activities.  libuv offers core utilities like timers, non-blocking
-networking support, asynchronous file system access, child processes and more.
+libuvは **非同期**、 **イベント駆動** のプログラミングスタイルを強制します。 libuvの中心的な機能はイベントループとI/Oと他の活動(activity)の通知をベースにしたコールバックを提供することです。libuvはタイマのようなユーティリティ、ノンブロッキングのネットワークのサポート、非同期のファイルシステムへのアクセス、子プロセス等を提供します。
 
-Event loops
+イベントループ
 -----------
 
-In event-driven programming, an application expresses interest in certain events
-and respond to them when they occur. The responsibility of gathering events
-from the operating system or monitoring other sources of events is handled by
-libuv, and the user can register callbacks to be invoked when an event occurs.
-The event-loop usually keeps running *forever*. In pseudocode:
+イベント駆動のプログラミングにおいては、アプリケーションは特定のイベントに対する興味を表明し、そのイベントが発生した時にこれらに反応します。OSか他の発生源からイベントを収集する責任はlibuvによって取り扱われ、ユーザはイベントが発生した時に実行されるコールバックを登録することができます。イベントループは通常 *永久に* 実行され続けます。擬似コードは以下のようになります:
 
 .. code-block:: python
 
@@ -22,53 +15,25 @@ The event-loop usually keeps running *forever*. In pseudocode:
         if there is a callback associated with e:
             call the callback
 
-Some examples of events are:
+イベントの例には以下のようなものがあります 
 
-* File is ready for writing
-* A socket has data ready to be read
-* A timer has timed out
+* ファイルの書き込み準備ができている
+* ソケットが読み取り可能なデータを持っている
+* タイマが設定したタイミングに達した
 
-This event loop is encapsulated by ``uv_run()`` -- the end-all function when using
-libuv.
+このイベントループは ``uv_run()`` -- libuvを用いたときに結局実行される関数 -- によって隠蔽されています。
 
-The most common activity of systems programs is to deal with input and output,
-rather than a lot of number-crunching. The problem with using conventional
-input/output functions (``read``, ``fprintf``, etc.) is that they are
-**blocking**. The actual write to a hard disk or reading from a network, takes
-a disproportionately long time compared to the speed of the processor. The
-functions don't return until the task is done, so that your program is doing
-nothing. For programs which require high performance this is a major roadblock
-as other activities and other I/O operations are kept waiting.
+システムプログラミングのもっとも共通な処理は、複雑な計算というよりもむしろ入力と出力を取り扱うことです。一般的な入力/出力関数(``read``, ``fprintf``, etc.)を用いる問題点は、これらが **ブロッキング** であるということです。ハードディスクに対する実際の書き込み、もしくはネットワークからのデータ読み出しは、プロセッサのスピードに比較して絶望的に長い時間を必要とします。これらの関数は処理が完了するまで制御が戻らないため、その間プログラムは何も行うことができません。高いパフォーマンスを必要とするプログラムにとって、これは他の処理や他のI/O操作が待たされ続けるため重要な障害となります。
 
-One of the standard solutions is to use threads. Each blocking I/O operation is
-started in a separate thread (or in a thread pool). When the blocking function
-gets invoked in the thread, the processor can schedule another thread to run,
-which actually needs the CPU.
+標準的な解決策の一つはスレッドを用いることです。各ブロッキングI/O操作は分離されたスレッド(もしくはスレッドプール)の中で開始されます。スレッド内でブロッキング関数が実行されたとき、プロセッサは実際にCPU処理を必要としている実行すべき他のスレッドをスケジューリングすることができます。
 
-The approach followed by libuv uses another style, which is the **asynchronous,
-non-blocking** style. Most modern operating systems provide event notification
-subsystems. For example, a normal ``read`` call on a socket would block until
-the sender actually sent something. Instead, the application can request the
-operating system to watch the socket and put an event notification in the
-queue. The application can inspect the events at its convenience (perhaps doing
-some number crunching before to use the processor to the maximum) and grab the
-data. It is **asynchronous** because the application expressed interest at one
-point, then used the data at another point (in time and space). It is
-**non-blocking** because the application process was free to do other tasks.
-This fits in well with libuv's event-loop approach, since the operating system
-events can be treated as just another libuv event. The non-blocking ensures
-that other events can continue to be handled as fast they come in [#]_.
+libuvで採用されているアプローチはこれとは違うもので、**非同期、ノンブロッキング**なスタイルを用いています。ほとんどのモダンなOSはイベント通知のためのサブシステムを提供しています。例えば、ソケットに対する通常の ``read`` 呼び出しは送信側が何かを送信するまでブロックする可能性があります。それに対して、アプリケーションはOSにソケットを監視することを要求し、キューにイベントの通知を投入してもらうことができます。アプリケーションは都合の良い時(おそらくプロセッサを最大限に使う前にいくつかをガリガリ処理する)にイベントを解析しデータを把握します。これはアプリケーションがある時点で興味を示し、(時間的/空間的に)別の時点でデータを利用するために**非同期**です。また、これはアプリケーションは他の処理を行うことが自由であるために**ノンブロッキング**です。これはOSのイベントが単にlibuvイベントの別種として扱えるために、libuvのイベントループによるアプローチとよく合っていると言えます。
 
 .. NOTE::
+    
+    どうI/Oがバックグラウンドで処理されるかというのは我々の感心事ではないが、コンピュータのハードウェアの処理方法と、プロセッサの基本単位としてのスレッドの関係のために、libuvと各種のOSは通常バックグラウンド/ワーカスレッドと、処理を行うためのノンブロックキングなポーリングを選択もしくは併用している。
 
-    How the I/O is run in the background is not of our concern, but due to the
-    way our computer hardware works, with the thread as the basic unit of the
-    processor, libuv and OSes will usually run background/worker threads and/or
-    polling to perform tasks in a non-blocking manner.
-
-Bert Belder, one of the libuv core developers has a small video explaining the
-architecture of libuv and its background. If you have no prior experience with
-either libuv or libev, it is a quick, useful watch.
+libuvのコア開発者の一人であるBert Belderはlibuvのアーキテクチャとその背景を短い動画にしている。もしlibuvもしくはlibevに関する経験がなければ、素早く理解するために有用なものになります。
 
 .. raw:: html
 
