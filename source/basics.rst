@@ -31,7 +31,7 @@ libuvで採用されているアプローチはこれとは違うもので、**�
 
 .. NOTE::
     
-    どうI/Oがバックグラウンドで処理されるかというのは我々の感心事ではないが、コンピュータのハードウェアの処理方法と、プロセッサの基本単位としてのスレッドの関係のために、libuvと各種のOSは通常バックグラウンド/ワーカスレッドと、処理を行うためのノンブロックキングなポーリングを選択もしくは併用している。
+    どうI/Oがバックグラウンドで処理されるかというのは我々の感心事ではありませんが、コンピュータのハードウェアの処理方法と、プロセッサの基本単位としてのスレッドの関係のために、libuvと各種のOSは通常バックグラウンド/ワーカスレッドと、処理を行うためのノンブロックキングなポーリングを選択もしくは併用しています。
 
 libuvのコア開発者の一人であるBert Belderはlibuvのアーキテクチャとその背景を短い動画にしている。もしlibuvもしくはlibevに関する経験がなければ、素早く理解するために有用なものになります。
 
@@ -44,46 +44,111 @@ libuvのコア開発者の一人であるBert Belderはlibuvのアーキテク�
 Hello World
 -----------
 
-With the basics out of the way, lets write our first libuv program. It does
-nothing, except start a loop which will exit immediately.
+基本はさておき、最初のlibuvプログラムを書いてみましょう。すぐにexitするループを開始する以外には何もありません。
 
 .. rubric:: helloworld/main.c
 .. literalinclude:: ../code/helloworld/main.c
     :linenos:
+.. code-block:: C
 
-This program quits immediately because it has no events to process. A libuv
-event loop has to be told to watch out for events using the various API
-functions.
+    #include <stdio.h>
+    #include <uv.h>
 
-Default loop
+    int main() {
+        uv_loop_t *loop = uv_loop_new();
+
+        printf("Now quitting.\n");
+        uv_run(loop, UV_RUN_DEFAULT);
+
+        return 0;
+    }
+
+プログラムは処理すべきイベントがないため即座に終了します。libuvのイベントループは様々な関数を用いることによって、イベントを監視するように指示される必要があります。
+
+デフォルトループ
 ++++++++++++
 
-A default loop is provided by libuv and can be accessed using
-``uv_default_loop()``. You should use this loop if you only want a single
-loop.
+デフォルトループはlibuvによって提供され、``uv_default_loop()``を用いてアクセスすることができます。ループを一つだけ欲しい場合はこのループを用いるべきです。。
 
 .. note::
 
-    node.js uses the default loop as its main loop. If you are writing bindings
-    you should be aware of this.
+    node.jsはメインループとしてこのデフォルトループを用います。もしバインディングを作成する場合はこのことを気に留めておく必要があります。
 
-Error handling
+エラーハンドリング
 --------------
 
-libuv functions which may fail return ``-1`` on error. The error code itself is
-set on the event loop as ``last_err``. Use ``uv_last_error(loop)`` to get
-a ``uv_err_t`` which has a ``code`` member with the error code. ``code`` is an
-enumeration of ``UV_*`` as defined here:
+失敗する可能性があるlibuvの関数はエラー時に``-1``を返却します。エラーコードそのものはイベントループ上で``last_err``としてセットされます。エラーコードとして``code``メンバを持つ``uv_err_t``構造体を取得するために``uv_last_error(loop)``を使いましょう。``code``はここに定義されるように``UV_*``の列挙です。
 
 .. rubric:: libuv error codes
 .. literalinclude:: ../libuv/include/uv.h
     :lines: 69-127
 
-You can use the ``uv_strerror(uv_err_t)`` and ``uv_err_name(uv_err_t)`` functions
-to get a ``const char *`` describing the error or the error name respectively.
+libuvのエラーコード
+.. code-block:: C
 
-Async callbacks have a ``status`` argument as the last argument. Use this instead
-of the return value.
+    XX( -1, UNKNOWN, "unknown error")                                           \
+    XX(  0, OK, "success")                                                      \
+    XX(  1, EOF, "end of file")                                                 \
+    XX(  2, EADDRINFO, "getaddrinfo error")                                     \  
+    XX(  3, EACCES, "permission denied")                                        \
+    XX(  4, EAGAIN, "resource temporarily unavailable")                         \
+    XX(  5, EADDRINUSE, "address already in use")                               \
+    XX(  6, EADDRNOTAVAIL, "address not available")                             \
+    XX(  7, EAFNOSUPPORT, "address family not supported")                       \
+    XX(  8, EALREADY, "connection already in progress")                         \
+    XX(  9, EBADF, "bad file descriptor")                                       \
+    XX( 10, EBUSY, "resource busy or locked")                                   \
+    XX( 11, ECONNABORTED, "software caused connection abort")                   \
+    XX( 12, ECONNREFUSED, "connection refused")                                 \
+    XX( 13, ECONNRESET, "connection reset by peer")                             \
+    XX( 14, EDESTADDRREQ, "destination address required")                       \
+    XX( 15, EFAULT, "bad address in system call argument")                      \
+    XX( 16, EHOSTUNREACH, "host is unreachable")                                \
+    XX( 17, EINTR, "interrupted system call")                                   \
+    XX( 18, EINVAL, "invalid argument")                                         \
+    XX( 19, EISCONN, "socket is already connected")                             \
+    XX( 20, EMFILE, "too many open files")                                      \
+    XX( 21, EMSGSIZE, "message too long")                                       \
+    XX( 22, ENETDOWN, "network is down")                                        \
+    XX( 23, ENETUNREACH, "network is unreachable")                              \
+    XX( 24, ENFILE, "file table overflow")                                      \
+    XX( 25, ENOBUFS, "no buffer space available")                               \
+    XX( 26, ENOMEM, "not enough memory")                                        \
+    XX( 27, ENOTDIR, "not a directory")                                         \
+    XX( 28, EISDIR, "illegal operation on a directory")                         \
+    XX( 29, ENONET, "machine is not on the network")                            \
+    XX( 31, ENOTCONN, "socket is not connected")                                \
+    XX( 32, ENOTSOCK, "socket operation on non-socket")                         \
+    XX( 33, ENOTSUP, "operation not supported on socket")                       \
+    XX( 34, ENOENT, "no such file or directory")                                \
+    XX( 35, ENOSYS, "function not implemented")                                 \
+    XX( 36, EPIPE, "broken pipe")                                               \
+    XX( 37, EPROTO, "protocol error")                                           \
+    XX( 38, EPROTONOSUPPORT, "protocol not supported")                          \
+    XX( 39, EPROTOTYPE, "protocol wrong type for socket")                       \
+    XX( 40, ETIMEDOUT, "connection timed out")                                  \
+    XX( 41, ECHARSET, "invalid Unicode character")                              \
+    XX( 42, EAIFAMNOSUPPORT, "address family for hostname not supported")       \
+    XX( 44, EAISERVICE, "servname not supported for ai_socktype")               \
+    XX( 45, EAISOCKTYPE, "ai_socktype not supported")                           \
+    XX( 46, ESHUTDOWN, "cannot send after transport endpoint shutdown")         \
+    XX( 47, EEXIST, "file already exists")                                      \
+    XX( 48, ESRCH, "no such process")                                           \
+    XX( 49, ENAMETOOLONG, "name too long")                                      \
+    XX( 50, EPERM, "operation not permitted")                                   \
+    XX( 51, ELOOP, "too many symbolic links encountered")                       \
+    XX( 52, EXDEV, "cross-device link not permitted")                           \
+    XX( 53, ENOTEMPTY, "directory not empty")                                   \
+    XX( 54, ENOSPC, "no space left on device")                                  \
+    XX( 55, EIO, "i/o error")                                                   \
+    XX( 56, EROFS, "read-only file system")                                     \
+    XX( 57, ENODEV, "no such device")                                           \
+    XX( 58, ESPIPE, "invalid seek")                                             \
+    XX( 59, ECANCELED, "operation canceled")                                    \
+
+``uv_strerror(uv_err_t)``と``uv_err_name(uv_err_t)``関数を用いると、エラーやエラーの名前が格納された``const char*``を取得することができます。
+
+非同期コールバックは最後の引数として``status``引数を持ちます。これを戻り値の代わりに使ってください。
 
 Watchers
 --------
