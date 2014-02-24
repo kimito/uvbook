@@ -84,6 +84,7 @@ Hello World
     :lines: 69-127
 
 libuvのエラーコード
+
 .. code-block:: C
 
     XX( -1, UNKNOWN, "unknown error")                                           \
