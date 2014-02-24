@@ -68,7 +68,7 @@ Hello World
 デフォルトループ
 ++++++++++++
 
-デフォルトループはlibuvによって提供され、``uv_default_loop()``を用いてアクセスすることができます。ループを一つだけ欲しい場合はこのループを用いるべきです。。
+デフォルトループはlibuvによって提供され、 ``uv_default_loop()`` を用いてアクセスすることができます。ループを一つだけ欲しい場合はこのループを用いるべきです。。
 
 .. note::
 
@@ -77,7 +77,7 @@ Hello World
 エラーハンドリング
 --------------
 
-失敗する可能性があるlibuvの関数はエラー時に``-1``を返却します。エラーコードそのものはイベントループ上で``last_err``としてセットされます。エラーコードとして``code``メンバを持つ``uv_err_t``構造体を取得するために``uv_last_error(loop)``を使いましょう。``code``はここに定義されるように``UV_*``の列挙です。
+失敗する可能性があるlibuvの関数はエラー時に ``-1`` を返却します。エラーコードそのものはイベントループ上で ``last_err`` としてセットされます。エラーコードとして ``code`` メンバを持つ ``uv_err_t`` 構造体を取得するために ``uv_last_error(loop)`` を使いましょう。 ``code`` はここに定義されるように ``UV_*`` の列挙です。
 
 .. rubric:: libuv error codes
 .. literalinclude:: ../libuv/include/uv.h
@@ -147,9 +147,9 @@ libuvのエラーコード
     XX( 58, ESPIPE, "invalid seek")                                             \
     XX( 59, ECANCELED, "operation canceled")                                    \
 
-``uv_strerror(uv_err_t)``と``uv_err_name(uv_err_t)``関数を用いると、エラーやエラーの名前が格納された``const char*``を取得することができます。
+``uv_strerror(uv_err_t)`` と ``uv_err_name(uv_err_t)`` 関数を用いると、エラーやエラーの名前が格納された ``const char*`` を取得することができます。
 
-非同期コールバックは最後の引数として``status``引数を持ちます。これを戻り値の代わりに使ってください。
+非同期コールバックは最後の引数として ``status`` 引数を持ちます。これを戻り値の代わりに使ってください。
 
 Watchers
 --------
