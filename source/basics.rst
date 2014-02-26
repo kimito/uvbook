@@ -213,7 +213,7 @@ Idling
 .. rubric:: idle-basic/main.c
 .. literalinclude:: ../code/idle-basic/main.c
     :emphasize-lines: 6,10,14-17
-    
+
     #include <stdio.h>
     #include <uv.h>
     
