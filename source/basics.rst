@@ -27,7 +27,7 @@ libuvは **非同期**、 **イベント駆動** のプログラミングスタ�
 
 標準的な解決策の一つはスレッドを用いることです。各ブロッキングI/O操作は分離されたスレッド(もしくはスレッドプール)の中で開始されます。スレッド内でブロッキング関数が実行されたとき、プロセッサは実際にCPU処理を必要としている実行すべき他のスレッドをスケジューリングすることができます。
 
-libuvで採用されているアプローチはこれとは違うもので、**非同期、ノンブロッキング**なスタイルを用いています。ほとんどのモダンなOSはイベント通知のためのサブシステムを提供しています。例えば、ソケットに対する通常の ``read`` 呼び出しは送信側が何かを送信するまでブロックする可能性があります。それに対して、アプリケーションはOSにソケットを監視することを要求し、キューにイベントの通知を投入してもらうことができます。アプリケーションは都合の良い時(おそらくプロセッサを最大限に使う前にいくつかをガリガリ処理する)にイベントを解析しデータを把握します。これはアプリケーションがある時点で興味を示し、(時間的/空間的に)別の時点でデータを利用するために**非同期**です。また、これはアプリケーションは他の処理を行うことが自由であるために**ノンブロッキング**です。これはOSのイベントが単にlibuvイベントの別種として扱えるために、libuvのイベントループによるアプローチとよく合っていると言えます。
+libuvで採用されているアプローチはこれとは違うもので、**非同期、ノンブロッキング**なスタイルを用いています。ほとんどのモダンなOSはイベント通知のためのサブシステムを提供しています。例えば、ソケットに対する通常の ``read`` 呼び出しは送信側が何かを送信するまでブロックする可能性があります。それに対して、アプリケーションはOSにソケットを監視することを要求し、キューにイベントの通知を投入してもらうことができます。アプリケーションは都合の良い時(おそらくプロセッサを最大限に使う前にいくつかをガリガリ処理する)にイベントを解析しデータを把握します。これはアプリケーションがある時点で興味を示し、(時間的/空間的に)別の時点でデータを利用するために**非同期**です。また、これはアプリケーションは他の処理を行うことが自由であるために**ノンブロッキング**です。これはOSのイベントが単にlibuvイベントの別種として扱えるために、libuvのイベントループによるアプローチとよく合っていると言えます。ノンブロッキングはイベントが到着しても可能な限り早く他のイベントに対する処理を再開できることを可能にします [1]。
 
 .. NOTE::
     
@@ -151,64 +151,95 @@ libuvのエラーコード
 
 非同期コールバックは最後の引数として ``status`` 引数を持ちます。これを戻り値の代わりに使ってください。
 
-Watchers
+ウォッチャ
 --------
 
-Watchers are how users of libuv express interest in particular events. Watchers
-are opaque structs named as ``uv_TYPE_t`` where type signifies what the watcher
-is used for. A full list of watchers supported by libuv is:
+ウォッチャはlibuvのユーザが特定のイベントに対する興味を表明する方法です。ウォッチャはtypeがウォッチャがなんのためのものであるかを表明する ``uv_TYPE_t`` という名前の不透明(opaque)な構造体です。libuvによってサポートされているウォッチャの完全なリストは以下です:
 
 .. rubric:: libuv watchers
 .. literalinclude:: ../libuv/include/uv.h
     :lines: 190-207
 
+    typedef struct uv_loop_s uv_loop_t;
+    typedef struct uv_err_s uv_err_t;
+    typedef struct uv_handle_s uv_handle_t;
+    typedef struct uv_stream_s uv_stream_t;
+    typedef struct uv_tcp_s uv_tcp_t;
+    typedef struct uv_udp_s uv_udp_t;
+    typedef struct uv_pipe_s uv_pipe_t;
+    typedef struct uv_tty_s uv_tty_t;
+    typedef struct uv_poll_s uv_poll_t;
+    typedef struct uv_timer_s uv_timer_t;
+    typedef struct uv_prepare_s uv_prepare_t;
+    typedef struct uv_check_s uv_check_t;
+    typedef struct uv_idle_s uv_idle_t;
+    typedef struct uv_async_s uv_async_t;
+    typedef struct uv_process_s uv_process_t;
+    typedef struct uv_fs_event_s uv_fs_event_t;
+    typedef struct uv_fs_poll_s uv_fs_poll_t;
+    typedef struct uv_signal_s uv_signal_t;
+
 .. note::
 
-    All watcher structs are subclasses of ``uv_handle_t`` and often referred to
-    as **handles** in libuv and in this text.
+    全てのウォッチャの構造体は ``uv_handle_t`` のサブクラスであり、しばしば **ハンドル**  と呼ばれる。このテキストでもこれに従います。
 
-Watchers are setup by a corresponding::
+ウォッチャは各々
 
     uv_TYPE_init(uv_TYPE_t*)
 
-function.
+関数によってセットアップされます。
 
 .. note::
 
-    Some watcher initialization functions require the loop as a first argument.
+    いくつかのウォッチャの初期化関数はループを第一引数として受け取ります。
 
-A watcher is set to actually listen for events by invoking::
+ウォッチャは
 
     uv_TYPE_start(uv_TYPE_t*, callback)
 
-and stopped by calling the corresponding::
+をコールすることによりイベントを待ち受けるように設定され、
 
     uv_TYPE_stop(uv_TYPE_t*)
+    
+をコールすることによって待ち受けが停止されます。
 
-Callbacks are functions which are called by libuv whenever an event the watcher
-is interested in has taken place. Application specific logic will usually be
-implemented in the callback. For example, an IO watcher's callback will receive
-the data read from a file, a timer callback will be triggered on timeout and so
-on.
+コールバックはウォッチャが興味を持ったイベントが発生したときにいつでもlibuvによってコールされる関数です。アプリケーション特有のロジックは通常コールバック内に実装されます。例えば、I/Oののコールバックはファイルから読み取ったデータを受け取り、タイマのコールバックはタイムアウトによって起動する、などです。
 
 Idling
 ++++++
 
-Here is an example of using a watcher. An idle watcher's callback is repeatedly
-called. There are some deeper semantics, discussed in :doc:`utilities`, but
-we'll ignore them for now. Let's just use an idle watcher to look at the
-watcher life cycle and see how ``uv_run()`` will now block because a watcher is
-present. The idle watcher is stopped when the count is reached and ``uv_run()``
-exits since no event watchers are active.
+ウォッチャを用いた例です。アイドルのウォッチャは繰り返しコールされます。後に `utilities` で触れるいくつかの難解な意味の部分がありますが、今は無視しておきましょう。ウォッチャののライフサイクルを観察するためにアイドルのウォッチャを使い、 ``uv_run()`` はウォッチャが存在するためブロックされます。アイドルのウォッチャはカウントが規定の値に達すると停止し、 ``uv_run()``は有効なウォッチャが存在しないため終了します。
 
 .. rubric:: idle-basic/main.c
 .. literalinclude:: ../code/idle-basic/main.c
     :emphasize-lines: 6,10,14-17
+    
+    #include <stdio.h>
+    #include <uv.h>
+    
+    int64_t counter = 0;
+    
+    void wait_for_a_while(uv_idle_t* handle, int status) {
+        counter++;
 
-void \*data pattern
+        if (counter >= 10e6)
+            uv_idle_stop(handle);
+    }
 
-note about not necessarily creating type structs on the stack
+    int main() {
+        uv_idle_t idler;
+
+        uv_idle_init(uv_default_loop(), &idler);
+        uv_idle_start(&idler, wait_for_a_while);
+
+        printf("Idling...\n");
+        uv_run(uv_default_loop(), UV_RUN_DEFAULT);
+
+        return 0;
+    }
+
+なお、スタック上にuv_TYPE_t構造体を割り当てる必要はありません。
 
 ----
 
-.. [#] Depending on the capacity of the hardware of course.
+.. [#] もちろん、ハードウェアの能力に依存します。
