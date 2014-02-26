@@ -214,6 +214,7 @@ Idling
 .. literalinclude:: ../code/idle-basic/main.c
     :emphasize-lines: 6,10,14-17
 
+.. code-block:: C
 
     #include <stdio.h>
     #include <uv.h>
