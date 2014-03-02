@@ -141,7 +141,7 @@ readコールバックの中の ``result`` フィールドはEOFの場合は0が
 ファイルシステムの操作
 ---------------------
 
-``unlink``、``rmdir``、``stat``のような全ての標準的なファイルシステム操作は非同期的な処理のサポートがあり、直感的な引数の順番を持ちます。これらはread/write/openの呼び出しと同様のパターンに従い、 ``uv_fs_result`` フィールドに結果を格納してリターンします。
+``unlink`` 、 ``rmdir`` 、 ``stat`` のような全ての標準的なファイルシステム操作は非同期的な処理のサポートがあり、直感的な引数の順番を持ちます。これらはread/write/openの呼び出しと同様のパターンに従い、 ``uv_fs_result`` フィールドに結果を格納してリターンします。
 
 .. rubric:: Filesystem operations
 .. literalinclude:: ../libuv/include/uv.h
