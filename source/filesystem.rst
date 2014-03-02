@@ -45,6 +45,7 @@
     :emphasize-lines: 2
     
 .. code-block:: c
+
        void on_open(uv_fs_t *req) {
         if (req->result != -1) {
             uv_fs_read(uv_default_loop(), &read_req, req->result,
@@ -69,6 +70,7 @@
     :emphasize-lines: 6,9,12
 
 .. code-block:: c
+
     void on_read(uv_fs_t *req) {
         uv_fs_req_cleanup(req);
         if (req->result < 0) {
