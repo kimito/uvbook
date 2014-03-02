@@ -367,9 +367,6 @@ readコールバックの ``nread`` パラメータはエラー時には-1とな
         uv_fs_event_init(loop, (uv_fs_event_t*) malloc(sizeof(uv_fs_event_t)), argv[argc], run_command, 0);
     }
 
-The third argument is the actual file or directory to monitor. The last
-argument, ``flags``, can be:
-
 第三引数は監視する実際のファイルもしくはディレクトリです。最後の引数である ``flags`` は以下の値のいずれかになります:
 
 .. literalinclude:: ../libuv/include/uv.h
