@@ -102,6 +102,8 @@ readコールバックの中の ``result`` フィールドはEOFの場合は0が
     :lines: 14-22
     :emphasize-lines: 7
 
+.. code-block:: c
+
     void on_write(uv_fs_t *req) {
         uv_fs_req_cleanup(req);
         if (req->result < 0) {
@@ -128,11 +130,13 @@ readコールバックの中の ``result`` フィールドはEOFの場合は0が
     :lines: 50-54
     :emphasize-lines: 2
 
-int main(int argc, char **argv) {
-    uv_fs_open(uv_default_loop(), &open_req, argv[1], O_RDONLY, 0, on_open);
-    uv_run(uv_default_loop(), UV_RUN_DEFAULT);
-    return 0;
-}
+.. code-block:: c
+
+    int main(int argc, char **argv) {
+        uv_fs_open(uv_default_loop(), &open_req, argv[1], O_RDONLY, 0, on_open);
+        uv_run(uv_default_loop(), UV_RUN_DEFAULT);
+        return 0;
+    }
 
 ファイルシステムの操作
 ---------------------
@@ -142,6 +146,8 @@ int main(int argc, char **argv) {
 .. rubric:: Filesystem operations
 .. literalinclude:: ../libuv/include/uv.h
     :lines: 1523-1581
+
+.. code-block:: c
 
     typedef enum {
       UV_FS_UNKNOWN = -1,
@@ -237,6 +243,8 @@ libuvに含まれる基本的なI/O機能はストリーム( ``uv_stream_t`` )�
     :lines: 62-81
     :emphasize-lines: 4,5,15
 
+.. code-block:: c
+
     int main(int argc, char **argv) {
         loop = uv_default_loop();
 
@@ -265,6 +273,8 @@ libuvに含まれる基本的なI/O機能はストリーム( ``uv_stream_t`` )�
 .. literalinclude:: ../code/uvtee/main.c
     :linenos:
     :lines: 19-22,44-60
+
+.. code-block:: c
     
     uv_buf_t alloc_buffer(uv_handle_t *handle, size_t suggested_size) {
         return uv_buf_init((char*) malloc(suggested_size), suggested_size);
@@ -297,6 +307,8 @@ readコールバックの ``nread`` パラメータはエラー時には-1とな
     :linenos:
     :lines: 9-13,23-42
 
+.. code-block:: c
+
     typedef struct {
         uv_write_t req;
         uv_buf_t buf;
@@ -327,10 +339,6 @@ readコールバックの ``nread`` パラメータはエラー時には-1とな
 
 .. WARNING::
 
-    If your program is meant to be used with other programs it may knowingly or
-    unknowingly be writing to a pipe. This makes it susceptible to `aborting on
-    receiving a SIGPIPE`_. It is a good idea to insert::
-    
     もしプログラムが他のプログラムと同時に使用されるのなら、意識しているかどうかに関わらずパイプに書き込みがされます。このことでプログラムは `SIGPIPEを受信することによりアボート`_ されやすくなってしまいます。下記をアプリケーションの初期化時に挿入しておくのがよい考えでしょう。
 
         signal(SIGPIPE, SIG_IGN)
@@ -351,6 +359,8 @@ readコールバックの ``nread`` パラメータはエラー時には-1とな
     :linenos:
     :lines: 29-32
     :emphasize-lines: 3
+
+.. code-block:: c
     
     while (argc-- > 2) {
         fprintf(stderr, "Adding watch on %s\n", argv[argc]);
@@ -364,6 +374,8 @@ argument, ``flags``, can be:
 
 .. literalinclude:: ../libuv/include/uv.h
     :lines: 1728,1737,1744
+
+.. code-block:: c
    
     UV_FS_EVENT_WATCH_ENTRY = 1,
     UV_FS_EVENT_STAT = 2,
@@ -385,6 +397,8 @@ argument, ``flags``, can be:
 .. literalinclude:: ../code/onchange/main.c
     :linenos:
     :lines: 9-18
+
+.. code-block:: c
     
         void run_command(uv_fs_event_t *handle, const char *filename, int events, int status) {
         fprintf(stderr, "Change detected in %s: ", handle->filename);
