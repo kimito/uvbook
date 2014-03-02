@@ -46,7 +46,7 @@
     
 .. code-block:: c
 
-       void on_open(uv_fs_t *req) {
+    void on_open(uv_fs_t *req) {
         if (req->result != -1) {
             uv_fs_read(uv_default_loop(), &read_req, req->result,
                        buffer, sizeof(buffer), -1, on_read);
