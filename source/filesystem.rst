@@ -22,7 +22,7 @@
 
     int uv_fs_open(uv_loop_t* loop, uv_fs_t* req, const char* path, int flags, int mode, uv_fs_cb cb)
 
-``flags`` と ``mode`` は標準的な `Unixのflags <http://man7.org/linux/man-pages/man2/open.2.html>`_ である。libuvはWindowsにおけるflagsに変換するように配慮しています。
+``flags`` と ``mode`` は標準的な `Unixのflags <http://man7.org/linux/man-pages/man2/open.2.html>`_ です。libuvはWindowsにおけるflagsに変換するように配慮しています。
 
 ファイルディスクリプタは下記の関数を用いることによりクローズされます。
 
@@ -36,7 +36,7 @@
 
     void callback(uv_fs_t* req);
 
-``cat`` の単純な実装を見てみよう。私たちはファイルがオープンされる時のコールバックを登録することから始めます。
+``cat`` の単純な実装を見てみましょう。ファイルがオープンされる時のコールバックを登録することから始めます。
 
 .. rubric:: uvcat/main.c - opening a file
 .. literalinclude:: ../code/uvcat/main.c
@@ -44,6 +44,7 @@
     :lines: 39-48
     :emphasize-lines: 2
     
+.. code-block:: c
        void on_open(uv_fs_t *req) {
         if (req->result != -1) {
             uv_fs_read(uv_default_loop(), &read_req, req->result,
@@ -67,6 +68,7 @@
     :lines: 24-37
     :emphasize-lines: 6,9,12
 
+.. code-block:: c
     void on_read(uv_fs_t *req) {
         uv_fs_req_cleanup(req);
         if (req->result < 0) {
