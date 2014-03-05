@@ -106,7 +106,7 @@ UDP
 
 .. note::
 
-    1024番以下のウェルノウンポートをを使用するため、 `udp-dhcp`は **root** で実行する必要があります。
+    1024番以下のウェルノウンポートをを使用するため、 `udp-dhcp` は **root** で実行する必要があります。
 
 .. rubric:: udp-dhcp/main.c - Setup and send UDP packets
 .. literalinclude:: ../code/udp-dhcp/main.c
@@ -144,13 +144,13 @@ UDP
 
 .. note::
 
-    ``0.0.0.0`` というIP アドレスは全てのインターフェイスにバインドするために用いられます。 ``255.255.255.255`` というIPアドレスはサブネット上の全てのインターフェイスにパケットを送信するブロードキャストアドレスです。 ``0``というポートはOSがランダムにポートを割り当てることを意味します。
+    ``0.0.0.0`` というIP アドレスは全てのインターフェイスにバインドするために用いられます。 ``255.255.255.255`` というIPアドレスはサブネット上の全てのインターフェイスにパケットを送信するブロードキャストアドレスです。 ``0`` というポートはOSがランダムにポートを割り当てることを意味します。
 
 最初に、ポート68番(DHCPクライアント)上で全てのインターフェイスにバインドするための受信ソケットを準備し、読み取り用のウォッチャを設定します。続いて、同様に送信ソケットを準備して、 ``uv_udp_send`` を用いて 67番ポート(DHCPサーバ)に *ブロードキャストメッセージ* を送信します。
 
 ブロードキャストフラグを設定することが **必要不可欠** であり、そうしないと ``EACCES`` エラー [#]_ が発生します。送信した正確なメッセージは本書には無関係ですが、興味があるならコードから読み解くことができます。通常と同じように、readとwriteのコールバックはなにか不具合がある場合は-1のステータスコードを受け取ります。
 
-UDPソケットは特定のピア(相手)と接続されているわけではないので、readのコールバックはパケットの送信者に関する追加パラメータを受け取ります。 ``flags``パラメータはアロケータによって提供されたバッファがデータを保持するのに十分でない場合には ``UV_UDP_PARTIAL`` になる可能性があります。 *この場合、OSは残りのデータを破棄するでしょう。*  (それがUDPです!)
+UDPソケットは特定のピア(相手)と接続されているわけではないので、readのコールバックはパケットの送信者に関する追加パラメータを受け取ります。 ``flags`` パラメータはアロケータによって提供されたバッファがデータを保持するのに十分でない場合には ``UV_UDP_PARTIAL``  になる可能性があります。 *この場合、OSは残りのデータを破棄するでしょう。*  (それがUDPです!)
 
 .. rubric:: udp-dhcp/main.c - Reading packets
 .. literalinclude:: ../code/udp-dhcp/main.c
@@ -194,8 +194,6 @@ IPv6ソケットはIPv4とIPv6通信の両方に使用することができま�
 マルチキャスト
 ~~~~~~~~~
 
-A socket can (un)subscribe to a multicast group using:
-
 ソケットは以下を用いてマルチキャストグループを購読(解除)することができます:
 
 .. literalinclude:: ../libuv/include/uv.h
@@ -215,11 +213,6 @@ A socket can (un)subscribe to a multicast group using:
 
 DNSの問い合わせ
 ------------
-
-libuv provides asynchronous DNS resolution. For this it provides its own
-``getaddrinfo`` replacement [#]_. In the callback you can
-perform normal socket operations on the retrieved addresses. Let's connect to
-Freenode to see an example of DNS resolution.
 
 libuvは非同期DNS解決を提供します。このため、libuvは自身が使う ``getaddrinfo`` の代替 [#]_ を提供します。コールバックの中で、抽出したアドレスに大して通常のソケット操作を行うことができます。それではDNS解決の例としてFreenode(irc.freenode.net)に接続してみましょう。
 
@@ -251,7 +244,7 @@ libuvは非同期DNS解決を提供します。このため、libuvは自身が�
         return uv_run(loop, UV_RUN_DEFAULT);
     }
 
-``uv_getaddrinfo``の戻り値が0でない場合はセットアップに失敗しており、コールバックが呼び出されることはありません。 ``uv_getaddrinfo`` が戻ったあとはすぐに全ての引数を開放することができます。 `hostname` 、 `servname` と `hints` 構造体は `the getaddrinfo man page <getaddrinfo>`_ に文書化されています。
+``uv_getaddrinfo`` の戻り値が0でない場合はセットアップに失敗しており、コールバックが呼び出されることはありません。 ``uv_getaddrinfo`` が戻ったあとはすぐに全ての引数を開放することができます。 `hostname` 、 `servname` と `hints` 構造体は `the getaddrinfo man page <getaddrinfo>`_ に文書化されています。
 
 resolverコールバックの中で ``struct addrinfo(s)`` のリンクリストから任意のIPを取り出すことができます。また、 ``uv_tcp_connect`` についても例示しています。コールバックの中で ``uv_freeaddrinfo`` を呼び出すことが必要です。
 
