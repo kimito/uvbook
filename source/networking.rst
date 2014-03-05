@@ -88,8 +88,6 @@ BSDソケットAPIで必要となる、人間が読めるIPアドレスとポー
 
 bind/listen/acceptを行う箇所では、クライアント側では単純に ``uv_tcp_connect`` を呼び出す処理となります。 ``uv_listen``の同様の ``uv_connect_cb`` スタイルのコールバックが ``uv_listen`` によって使用されます。下記のようになります::
 
-.. code-block:: c
-
     uv_tcp_t* socket = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
     uv_tcp_init(loop, socket);
 
@@ -215,7 +213,7 @@ A socket can (un)subscribe to a multicast group using:
 
 マルチキャストパケットのTTLは ``uv_udp_set_multicast_ttl`` を使用して変更することができます。
 
-Querying DNS
+DNSの問い合わせ
 ------------
 
 libuv provides asynchronous DNS resolution. For this it provides its own
@@ -342,8 +340,6 @@ resolverコールバックの中で ``struct addrinfo(s)`` のリンクリスト
 ----
 
 .. [#] http://beej.us/guide/bgnet/output/html/multipage/advanced.html#broadcast
-.. [#] on Windows only supported on Windows Vista and later.
+.. [#] WindowsではVista以降でのみサポートされています。
 .. [#] http://www.tldp.org/HOWTO/Multicast-HOWTO-6.html#ss6.1
-.. [#] libuv use the system ``getaddrinfo`` in the libuv threadpool. libuv
-    v0.8.0 and earlier also included c-ares_ as an alternative, but this has been
-    removed in v0.9.0.
+.. [#] libuvはシステムの ``getaddrinfo`` をlibuvのスレッドプール内で使用します。libuvのv0.8.0以前は代替として c-ares_ を代替として含んでいましたが、v0.9.0で削除されました。
