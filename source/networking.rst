@@ -88,7 +88,6 @@ BSDソケットAPIで必要となる、人間が読めるIPアドレスとポー
 
 bind/listen/acceptを行う箇所では、クライアント側では単純に ``uv_tcp_connect`` を呼び出す処理となります。 ``uv_listen``の同様の ``uv_connect_cb`` スタイルのコールバックが ``uv_listen`` によって使用されます。下記のようになります::
 
-.. code-block:: c
 
     uv_tcp_t* socket = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
     uv_tcp_init(loop, socket);
