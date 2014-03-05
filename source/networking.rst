@@ -88,6 +88,8 @@ BSDソケットAPIで必要となる、人間が読めるIPアドレスとポー
 
 bind/listen/acceptを行う箇所では、クライアント側では単純に ``uv_tcp_connect`` を呼び出す処理となります。 ``uv_listen``の同様の ``uv_connect_cb`` スタイルのコールバックが ``uv_listen`` によって使用されます。下記のようになります::
 
+.. code-block:: c
+
     uv_tcp_t* socket = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
     uv_tcp_init(loop, socket);
 
@@ -102,18 +104,11 @@ bind/listen/acceptを行う箇所では、クライアント側では単純に `
 UDP
 ---
 
-The `User Datagram Protocol`_ offers connectionless, unreliable network
-communication. Hence libuv doesn't offer a stream. Instead libuv provides
-non-blocking UDP support via the `uv_udp_t` (for receiving) and `uv_udp_send_t`
-(for sending) structures and related functions.  That said, the actual API for
-reading/writing is very similar to normal stream reads. To look at how UDP can
-be used, the example shows the first stage of obtaining an IP address from
-a `DHCP`_ server -- DHCP Discover.
+`User Datagram Protocol`_　はコネクション指向ではない、信頼性のないネットワーク通信を提供します。ですのでlibuvはストリームを提供しない代わりに(受信のために) `uv_udp_t` と(送信のために)　`uv_udp_send_t` 構造体と関連する関数経由でノンブロッキングのUDP機能を提供しています。これは、実際の読み書きのためのAPIは通常のストリームと非常に似ているということです。UDPの使用方法を理解するために `DHCP`_ サーバからIPアドレスを取得する(DHCP探索)の第一歩を例として見てみましょう。 
 
 .. note::
 
-    You will have to run `udp-dhcp` as **root** since it uses well known port
-    numbers below 1024.
+    1024番以下のウェルノウンポートをを使用するため、 `udp-dhcp`は **root** で実行する必要があります。
 
 .. rubric:: udp-dhcp/main.c - Setup and send UDP packets
 .. literalinclude:: ../code/udp-dhcp/main.c
@@ -121,64 +116,104 @@ a `DHCP`_ server -- DHCP Discover.
     :lines: 7-10,104-
     :emphasize-lines: 8,10-11,14,15,21
 
+.. code-block:: c
+
+    uv_loop_t *loop;
+    uv_udp_t send_socket;
+    uv_udp_t recv_socket;
+
+    int main() {
+        loop = uv_default_loop();
+
+        uv_udp_init(loop, &recv_socket);
+        struct sockaddr_in recv_addr = uv_ip4_addr("0.0.0.0", 68);
+        uv_udp_bind(&recv_socket, recv_addr, 0);
+        uv_udp_recv_start(&recv_socket, alloc_buffer, on_read);
+
+        uv_udp_init(loop, &send_socket);
+        uv_udp_bind(&send_socket, uv_ip4_addr("0.0.0.0", 0), 0);
+        uv_udp_set_broadcast(&send_socket, 1);
+
+        uv_udp_send_t send_req;
+        uv_buf_t discover_msg = make_discover_msg(&send_req);
+
+        struct sockaddr_in send_addr = uv_ip4_addr("255.255.255.255", 67);
+        uv_udp_send(&send_req, &send_socket, &discover_msg, 1, send_addr, on_send);
+
+        return uv_run(loop, UV_RUN_DEFAULT);
+    }
+
+
 .. note::
 
-    The IP address ``0.0.0.0`` is used to bind to all interfaces. The IP
-    address ``255.255.255.255`` is a broadcast address meaning that packets
-    will be sent to all interfaces on the subnet.  port ``0`` means that the OS
-    randomly assigns a port.
+    ``0.0.0.0`` というIP アドレスは全てのインターフェイスにバインドするために用いられます。 ``255.255.255.255`` というIPアドレスはサブネット上の全てのインターフェイスにパケットを送信するブロードキャストアドレスです。 ``0``というポートはOSがランダムにポートを割り当てることを意味します。
 
-First we setup the receiving socket to bind on all interfaces on port 68 (DHCP
-client) and start a read watcher on it. Then we setup a similar send socket and
-use ``uv_udp_send`` to send a *broadcast message* on port 67 (DHCP server).
+最初に、ポート68番(DHCPクライアント)上で全てのインターフェイスにバインドするための受信ソケットを準備し、読み取り用のウォッチャを設定します。続いて、同様に送信ソケットを準備して、 ``uv_udp_send`` を用いて 67番ポート(DHCPサーバ)に *ブロードキャストメッセージ* を送信します。
 
-It is **necessary** to set the broadcast flag, otherwise you will get an
-``EACCES`` error [#]_. The exact message being sent is irrelevant to this book
-and you can study the code if you are interested. As usual the read and write
-callbacks will receive a status code of -1 if something went wrong.
+ブロードキャストフラグを設定することが **必要不可欠** であり、そうしないと ``EACCES`` エラー [#]_ が発生します。送信した正確なメッセージは本書には無関係ですが、興味があるならコードから読み解くことができます。通常と同じように、readとwriteのコールバックはなにか不具合がある場合は-1のステータスコードを受け取ります。
 
-Since UDP sockets are not connected to a particular peer, the read callback
-receives an extra parameter about the sender of the packet. The ``flags``
-parameter may be ``UV_UDP_PARTIAL`` if the buffer provided by your allocator
-was not large enough to hold the data. *In this case the OS will discard the
-data that could not fit* (That's UDP for you!).
+UDPソケットは特定のピア(相手)と接続されているわけではないので、readのコールバックはパケットの送信者に関する追加パラメータを受け取ります。 ``flags``パラメータはアロケータによって提供されたバッファがデータを保持するのに十分でない場合には ``UV_UDP_PARTIAL`` になる可能性があります。 *この場合、OSは残りのデータを破棄するでしょう。*  (それがUDPです!)
 
 .. rubric:: udp-dhcp/main.c - Reading packets
 .. literalinclude:: ../code/udp-dhcp/main.c
     :linenos:
     :lines: 15-27,38-41
     :emphasize-lines: 1,16
+    
+.. code-block:: c
+    
+    void on_read(uv_udp_t *req, ssize_t nread, uv_buf_t buf, struct sockaddr *addr, unsigned flags) {
+        if (nread == -1) {
+            fprintf(stderr, "Read error %s\n", uv_err_name(uv_last_error(loop)));
+            uv_close((uv_handle_t*) req, NULL);
+            free(buf.base);
+            return;
+        }
 
-UDP Options
+        char sender[17] = { 0 };
+        uv_ip4_name((struct sockaddr_in*) addr, sender, 16);
+        fprintf(stderr, "Recv from %s\n", sender);
+
+        // ... DHCP specific code
+
+        free(buf.base);
+        uv_udp_recv_stop(req);
+    }
+
+UDPのオプション
 +++++++++++
 
 Time-to-live
 ~~~~~~~~~~~~
 
-The TTL of packets sent on the socket can be changed using ``uv_udp_set_ttl``.
+ソケットで送信されるパケットのTTLは ``uv_udp_set_ttl`` を用いて変更することができます。
 
-IPv6 stack only
+IPv6限定
 ~~~~~~~~~~~~~~~
 
-IPv6 sockets can be used for both IPv4 and IPv6 communication. If you want to
-restrict the socket to IPv6 only, pass the ``UV_UDP_IPV6ONLY`` flag to
-``uv_udp_bind6`` [#]_.
+IPv6ソケットはIPv4とIPv6通信の両方に使用することができます。もしIPv6限定にソケットを限定したい場合は、 ``uv_udp_bind6`` [#]_ に ``UV_UDP_IPV6ONLY`` フラグを渡してください。
 
-Multicast
+マルチキャスト
 ~~~~~~~~~
 
 A socket can (un)subscribe to a multicast group using:
 
+ソケットは以下を用いてマルチキャストグループを購読(解除)することができます:
+
 .. literalinclude:: ../libuv/include/uv.h
     :lines: 796-798
+    
+.. code-block:: c
+    
+    UV_EXTERN int uv_udp_set_membership(uv_udp_t* handle,
+        const char* multicast_addr, const char* interface_addr,
+        uv_membership membership);
 
-where ``membership`` is ``UV_JOIN_GROUP`` or ``UV_LEAVE_GROUP``.
+ここで、 ``membership``は ``UV_JOIN_GROUP`` か ``UV_LEAVE_GROUP`` です。
 
-Local loopback of multicast packets is enabled by default [#]_, use
-``uv_udp_set_multicast_loop`` to switch it off.
+マルチキャストのローカルループバックはデフォルト [#]_ で有効になっています。 無効にするには ``uv_udp_set_multicast_loop`` を使用します。
 
-The packet time-to-live for multicast packets can be changed using
-``uv_udp_set_multicast_ttl``.
+マルチキャストパケットのTTLは ``uv_udp_set_multicast_ttl`` を使用して変更することができます。
 
 Querying DNS
 ------------
@@ -188,20 +223,39 @@ libuv provides asynchronous DNS resolution. For this it provides its own
 perform normal socket operations on the retrieved addresses. Let's connect to
 Freenode to see an example of DNS resolution.
 
+libuvは非同期DNS解決を提供します。このため、libuvは自身が使う ``getaddrinfo`` の代替 [#]_ を提供します。コールバックの中で、抽出したアドレスに大して通常のソケット操作を行うことができます。それではDNS解決の例としてFreenode(irc.freenode.net)に接続してみましょう。
+
 .. rubric:: dns/main.c
 .. literalinclude:: ../code/dns/main.c
     :linenos:
     :lines: 61-
     :emphasize-lines: 12
 
-If ``uv_getaddrinfo`` returns non-zero, something went wrong in the setup and
-your callback won't be invoked at all. All arguments can be freed immediately
-after ``uv_getaddrinfo`` returns. The `hostname`, `servname` and `hints`
-structures are documented in `the getaddrinfo man page <getaddrinfo>`_.
+.. code-block:: c
 
-In the resolver callback, you can pick any IP from the linked list of ``struct
-addrinfo(s)``. This also demonstrates ``uv_tcp_connect``. It is necessary to
-call ``uv_freeaddrinfo`` in the callback.
+    int main() {
+        loop = uv_default_loop();
+
+        struct addrinfo hints;
+        hints.ai_family = PF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
+        hints.ai_flags = 0;
+
+        uv_getaddrinfo_t resolver;
+        fprintf(stderr, "irc.freenode.net is... ");
+        int r = uv_getaddrinfo(loop, &resolver, on_resolved, "irc.freenode.net", "6667", &hints);
+
+        if (r) {
+            fprintf(stderr, "getaddrinfo call error %s\n", uv_err_name(uv_last_error(loop)));
+            return 1;
+        }
+        return uv_run(loop, UV_RUN_DEFAULT);
+    }
+
+``uv_getaddrinfo``の戻り値が0でない場合はセットアップに失敗しており、コールバックが呼び出されることはありません。 ``uv_getaddrinfo`` が戻ったあとはすぐに全ての引数を開放することができます。 `hostname` 、 `servname` と `hints` 構造体は `the getaddrinfo man page <getaddrinfo>`_ に文書化されています。
+
+resolverコールバックの中で ``struct addrinfo(s)`` のリンクリストから任意のIPを取り出すことができます。また、 ``uv_tcp_connect`` についても例示しています。コールバックの中で ``uv_freeaddrinfo`` を呼び出すことが必要です。
 
 .. rubric:: dns/main.c
 .. literalinclude:: ../code/dns/main.c
@@ -209,22 +263,75 @@ call ``uv_freeaddrinfo`` in the callback.
     :lines: 41-59
     :emphasize-lines: 8,16
 
-Network interfaces
+.. code-block:: c
+
+    void on_resolved(uv_getaddrinfo_t *resolver, int status, struct addrinfo *res) {
+        if (status == -1) {
+            fprintf(stderr, "getaddrinfo callback error %s\n", uv_err_name(uv_last_error(loop)));
+            return;
+        }
+
+        char addr[17] = {'\0'};
+        uv_ip4_name((struct sockaddr_in*) res->ai_addr, addr, 16);
+        fprintf(stderr, "%s\n", addr);
+
+        uv_connect_t *connect_req = (uv_connect_t*) malloc(sizeof(uv_connect_t));
+        uv_tcp_t *socket = (uv_tcp_t*) malloc(sizeof(uv_tcp_t));
+        uv_tcp_init(loop, socket);
+
+        connect_req->data = (void*) socket;
+        uv_tcp_connect(connect_req, socket, *(struct sockaddr_in*) res->ai_addr, on_connect);
+
+        uv_freeaddrinfo(res);
+    }
+
+ネットワークインターフェイス
 ------------------
 
-Information about the system's network interfaces can be obtained through libuv
-using ``uv_interface_addresses``. This simple program just prints out all the
-interface details so you get an idea of the fields that are available. This is
-useful to allow your service to bind to IP addresses when it starts.
+システムのネットワークインターフェイスに関する情報は ``uv_interface_addresses`` を使用してlibuvから得ることができます。できることの概要を把握するために全てのインターフェイスの詳細を印刷するプログラムを見てみましょう。これは何らかのサービスを開始した時にIPアドレスにバインドするために有用です。
 
 .. rubric:: interfaces/main.c
 .. literalinclude:: ../code/interfaces/main.c
     :linenos:
     :emphasize-lines: 9,17
 
-``is_internal`` is true for loopback interfaces. Note that if a physical
-interface has multiple IPv4/IPv6 addresses, the name will be reported multiple
-times, with each address being reported once.
+.. code-block:: c
+
+    #include <stdio.h>
+    #include <uv.h>
+
+    int main() {
+        char buf[512];
+        uv_interface_address_t *info;
+        int count, i;
+
+        uv_interface_addresses(&info, &count);
+        i = count;
+
+        printf("Number of interfaces: %d\n", count);
+        while (i--) {
+            uv_interface_address_t interface = info[i];
+
+            printf("Name: %s\n", interface.name);
+            printf("Internal? %s\n", interface.is_internal ? "Yes" : "No");
+        
+            if (interface.address.address4.sin_family == AF_INET) {
+                uv_ip4_name(&interface.address.address4, buf, sizeof(buf));
+                printf("IPv4 address: %s\n", buf);
+            }
+            else if (interface.address.address4.sin_family == AF_INET6) {
+                uv_ip6_name(&interface.address.address6, buf, sizeof(buf));
+                printf("IPv6 address: %s\n", buf);
+            }
+
+            printf("\n");
+        }
+
+        uv_free_interface_addresses(info, count);
+        return 0;
+    }
+
+``is_internal`` はループバックインターフェイスではtrueとなります。もし物理インターフェイスが複数のIPv4/IPv6アドレスを保つ場合、名称は複数回報告され、各アドレスはそれぞれ一回ずつ報告されます。
 
 .. _c-ares: http://c-ares.haxx.se
 .. _getaddrinfo: http://www.kernel.org/doc/man-pages/online/pages/man3/getaddrinfo.3.html
