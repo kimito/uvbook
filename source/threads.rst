@@ -11,11 +11,6 @@ libuvのスレッド機能の特筆すべき点は、これがlibuvそのもの�
 
 libuvのスレッドAPIはスレッドの意味や文法がプラットフォームごとに全て異なり、完全さの店でもレベルが異なるのでとても制限されています。
 
-This chapter makes the following assumption: **There is only one event loop,
-running in one thread (the main thread)**. No other thread interacts
-with the event loop (except using ``uv_async_send``). :doc:`multiple` covers
-running event loops in different threads and managing them.
-
 この章では以下の仮定を行います: **一つのイベントループだけが存在し、単一(メイン)のスレッド上で動作する** （ ``uv_async_send`` を用いた場合を除き）イベントループは他のスレッドと関連することはありません。 :doc:`multiple` は異なる複数のスレッドでイベントループを実行し、これらを管理します。
 
 コアとなるスレッド操作
@@ -48,11 +43,6 @@ running event loops in different threads and managing them.
 .. tip::
 
     ``uv_thread_t`` はUnixにおいては単なる ``pthread_t`` の別名ですが、これは実装の詳細であり、常に成り立つことに依存することは避けてください。
-
-The second parameter is the function which will serve as the entry point for
-the thread, the last parameter is a ``void *`` argument which can be used to pass
-custom parameters to the thread. The function ``hare`` will now run in a separate
-thread, scheduled pre-emptively by the operating system:
 
 第二引数はスレッドのエントリポイントとなる関数で、最後の引数はスレッドに渡すために用いられる ``void*`` のカスタム引数です。 ``hare``関数は分離されたスレッドで実行され、OSによってプリエンプティブにスケジューリングされます。
 
@@ -377,10 +367,10 @@ libuvのバージョン `0.9.4` からは追加の関数である ``uv_cancel()`
     :lines: 7-8,34-
     :emphasize-lines: 2,11
 
+.. code-block:: c
+
     uv_loop_t *loop;
     uv_async_t async;
-
-.. code-block:: c
 
     int main() {
         loop = uv_default_loop();
@@ -462,9 +452,6 @@ download関数では、進行を表すインジケータを操作し、 `uv_asyn
     ミューテックスとリードライトロックは ``uv_async_send`` がこれを行っているのに対してシグナルハンドラ内部では動作しません。
 
 ``uv_async_send`` が必要とされる一つのユースケースは、スレッドアフィニティが必要なライブラリを機能性のために操作するときです。例えばnode.jsでは、v8エンジンのインスタンス、コンテキストとオブジェクト群はv8インスタンスが開始されるスレッドと分けられています。異なるスレッドからのv8データ構造と関わりを持つことは未定義の結果を生み出します。第三者のライブラリと結合しているnode.jsモジュールについて考えてみましょう。そのようなモジュールはおそらくこのようになるでしょう:
-
-1. In node, the third party library is set up with a JavaScript callback to be
-   invoked for more information::
 
 1. nodeでは、第三者のライブラリは追加の情報のために呼び出されるJavaScriptコールバックとともに準備されます::
 
