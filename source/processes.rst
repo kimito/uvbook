@@ -1,29 +1,16 @@
-Processes
+プロセス
 =========
 
-libuv offers considerable child process management, abstracting the platform
-differences and allowing communication with the child process using streams or
-named pipes.
+libuvはかなりの量の子プロセス管理機能を提供しており、プラットフォーム間の差異を抽象化し、ストリームや名前付きパイプを用いて子プロセスと通信することを可能にしています。
 
-A common idiom in Unix is for every process to do one thing and do it well. In
-such a case, a process often uses multiple child processes to achieve tasks
-(similar to using pipes in shells). A multi-process model with messages
-may also be easier to reason about compared to one with threads and shared
-memory.
+Unixにおける共通のイディオムは全てのプロセスが一つのことを良好に行えることです。このようなケースでは、プロセスはタスクを完遂するために複数の子プロセスを使用します(シェルがパイプを用いるように)。メッセージを用いるマルチプロセスモデルはスレッドと共有メモリを用いるモデルに比較して簡単になるでしょう。
 
-A common refrain against event-based programs is that they cannot take
-advantage of multiple cores in modern computers. In a multi-threaded program
-the kernel can perform scheduling and assign different threads to different
-cores, improving performance. But an event loop has only one thread.  The
-workaround can be to launch multiple processes instead, with each process
-running an event loop, and each process getting assigned to a separate CPU
-core.
+イベントベースのプログラムに対する共通のマイナス要因は現代のコンピュータにおいて複数のコアを持つ利点を活用しきれない点です。マルチスレッドプログラムではカーネルはスケジューリングを行い、異なるスレッドに異なるコアを割り当てることができます。しかし、イベントループは単一のスレッドです。これに対する回避策は代わりに複数のプロセスを起動することであり、各プロセスはイベントループを処理し、各プロセスは別々のコアを割り当てられます。
 
-Spawning child processes
+子プロセスの起動
 ------------------------
 
-The simplest case is when you simply want to launch a process and know when it
-exits. This is achieved using ``uv_spawn``.
+最も単純なケースはプロセスを起動し、いつプロセスが終了したかを知ることです。これは ``uv_spawn`` を用いることで達成されます。
 
 .. rubric:: spawn/main.c
 .. literalinclude:: ../code/spawn/main.c
@@ -33,26 +20,17 @@ exits. This is achieved using ``uv_spawn``.
 
 .. NOTE::
 
-    ``options`` is implicitly initialized with zeros since it is a global
-    variable.  If you change ``options`` to a local variable, remember to
-    initialize it to null out all unused fields::
+    ``options`` はグローバル変数であるため、明示的に0で初期化されています。もし ``options`` とローカル変数に変える場合、使用しない全てのフィールドをnullに初期化することを忘れないでください。
 
         uv_process_options_t options = {0};
 
-The ``uv_process_t`` struct only acts as the watcher, all options are set via
-``uv_process_options_t``. To simply launch a process, you need to set only the
-``file`` and ``args`` fields. ``file`` is the program to execute. Since
-``uv_spawn`` uses execvp_ internally, there is no need to supply the full
-path. Finally as per underlying conventions, **the arguments array has to be
-one larger than the number of arguments, with the last element being NULL**.
+``uv_process_t`` 構造体はウォッチャとしてのみ動作し、全てのオプションは ``uv_process_options_t`` を通じて設定します。プロセスの起動を簡単にするために、 ``file`` と ``args`` フィールドのみを設定する必要があります。 ``file`` は実行するプログラムです。 ``uv_spawn`` は内部的に execvp_ を内部的に使用するため、フルパスを渡す必要はありません。最後に、基本的な規則として、 **引数の配列は引数の数より一つ大きく、最後の要素はNULLである必要があります。**
 
 .. _execvp: http://www.kernel.org/doc/man-pages/online/pages/man3/exec.3.html
 
-After the call to ``uv_spawn``, ``uv_process_t.pid`` will contain the process
-ID of the child process.
+``uv_spawn`` の呼び出しのあとに、 ``uv_process_t.pid`` には子プロセスのプロセスIDが格納されています。
 
-The exit callback will be invoked with the *exit status* and the type of *signal*
-which caused the exit.
+exitコールバックは *終了ステータス* と exitの原因となった *signal* の種類とともに呼び出されます。
 
 .. rubric:: spawn/main.c
 .. literalinclude:: ../code/spawn/main.c
@@ -60,49 +38,40 @@ which caused the exit.
     :lines: 9-12
     :emphasize-lines: 3
 
-It is **required** to close the process watcher after the process exits.
+プロセスが終了した後にプロセスのウォッチャをクローズすることが **必要です。**
 
-Changing process parameters
+プロセスのパラメータ変更
 ---------------------------
 
-Before the child process is launched you can control the execution environment
-using fields in ``uv_process_options_t``.
+子プロセスが起動する前に ``uv_process_options_t`` 内のフィールドを用いて実行環境を制御することができます。
 
-Change execution directory
+実行ディレクトリの変更
 ++++++++++++++++++++++++++
 
-Set ``uv_process_options_t.cwd`` to the corresponding directory.
+``uv_process_options_t.cwd`` を対応するディレクトリに設定します。
 
-Set environment variables
+環境変数の設定
 +++++++++++++++++++++++++
 
-``uv_process_options_t.env`` is a null-terminated array of strings, each of the
-form ``VAR=VALUE`` used to set up the environment variables for the process. Set
-this to ``NULL`` to inherit the environment from the parent (this) process.
+``uv_process_options_t.env`` は文字列のヌル終端された配列であり、 各 ``VAR=VALUE`` 形式はプロセスの環境変数を設定するために用いられます。これを ``NULL`` にすることにより親プロセスからからの環境変数を受け継ぎます。
 
-Option flags
+オプションフラグ
 ++++++++++++
 
-Setting ``uv_process_options_t.flags`` to a bitwise OR of the following flags,
-modifies the child process behaviour:
+``uv_process_options_t.flags`` に下記のビット単位のORフラグを設定することにより、子プロセスの動作を修正します。
 
-* ``UV_PROCESS_SETUID`` - sets the child's execution user ID to ``uv_process_options_t.uid``.
-* ``UV_PROCESS_SETGID`` - sets the child's execution group ID to ``uv_process_options_t.gid``.
+* ``UV_PROCESS_SETUID`` - これは子の実行ユーザIDを ``uv_process_options_t.uid`` に設定します。
+ ``UV_PROCESS_SETGID`` - これは子の実行グループIDを ``uv_process_options_t.gid`` に設定します。
 
-Changing the UID/GID is only supported on Unix, ``uv_spawn`` will fail on
-Windows with ``UV_ENOTSUP``.
+UID/GIDの変更はUnixのみでサポートされており、 ``uv_spawn`` はWindowsでは ``UV_ENOTSUP`` で失敗します。
 
-* ``UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS`` - No quoting or escaping of
-  ``uv_process_options_t.args`` is done on Windows. Ignored on Unix.
-* ``UV_PROCESS_DETACHED`` - Starts the child process in a new session, which
-  will keep running after the parent process exits. See example below.
+* ``UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS`` - ``uv_process_options_t.args`` にクオートやエスケープを付与しません。Unixでは無視されます。
+* ``UV_PROCESS_DETACHED`` - 新しいセッションで子プロセスを開始し、親プロセスが終了した後も処理を続けます。下記の例を参照してください。
 
-Detaching processes
+プロセスをデタッチする
 -------------------
 
-Passing the flag ``UV_PROCESS_DETACHED`` can be used to launch daemons, or
-child processes which are independent of the parent so that the parent exiting
-does not affect it.
+``UV_PROCESS_DETACHED`` フラグを渡すことで、親の終了が影響しないデーモン、もしくは親と独立した子プロセスを起動することができます。
 
 .. rubric:: detach/main.c
 .. literalinclude:: ../code/detach/main.c
@@ -110,38 +79,26 @@ does not affect it.
     :lines: 9-30
     :emphasize-lines: 12,19
 
-Just remember that the watcher is still monitoring the child, so your program
-won't exit. Use ``uv_unref()`` if you want to be more *fire-and-forget*.
+ただ、ウォッチャはまだ子を監視しているため、プログラムは終了しないことをを忘れないでください。もっと *発動したら忘れる* ことを求めるなら、 ``uv_unref()`` を使用してください。
 
-Sending signals to processes
+プロセスへのシグナル送信
 ----------------------------
 
-libuv wraps the standard ``kill(2)`` system call on Unix and implements one
-with similar semantics on Windows, with *one caveat*: all of ``SIGTERM``,
-``SIGINT`` and ``SIGKILL``, lead to termination of the process. The signature
-of ``uv_kill`` is::
+libuvはUnix標準の ``kill(2)`` システムコール、及びWindowsにおいて同様の機能性を実装していますが、一つ警告があります。 ``SIGTERM`` 、 ``SIGINT`` と ``SIGKILL`` はプロセスを終了させます。 ``uv_kill`` のシグネチャは以下です ::
 
     uv_err_t uv_kill(int pid, int signum);
 
-For processes started using libuv, you may use ``uv_process_kill`` instead,
-which accepts the ``uv_process_t`` watcher as the first argument, rather than
-the pid. In this case, **remember to call** ``uv_close`` on the watcher.
+libuvを用いて開始されたプロセスのために、 ``uv_process_kill`` を代わりに用いることができます。これは pidの代わりに ``uv_process_t`` ウォッチャを第一引数として受け取ります。この場合、ウォッチャに対して ``uv_close`` を **呼び出すことを忘れないでください。**
 
-Signals
+シグナル
 -------
 
 TODO: update based on https://github.com/joyent/libuv/issues/668
 
-libuv provides wrappers around Unix signals with `some Windows support
-<https://github.com/joyent/libuv/blob/node-v0.9.4/include/uv.h#L1659>`_ as well.
+libuvは `some Windows support
+<https://github.com/joyent/libuv/blob/node-v0.9.4/include/uv.h#L1659>`_ によってUnixシグナルに対するラッパも提供します。
 
-To make signals 'play nice' with libuv, the API will deliver signals to *all
-handlers on all running event loops*! Use ``uv_signal_init()`` to initialize
-a handler and associate it with a loop. To listen for particular signals on
-that handler, use ``uv_signal_start()`` with the handler function. Each handler
-can only be associated with one signal number, with subsequent calls to
-``uv_signal_start()`` overwriting earlier associations. Use ``uv_signal_stop()`` to
-stop watching. Here is a small example demonstrating the various possibilities:
+libuvにより ’よく動作する' シグナルを生成するために、あるAPIが *全ての実行中のイベントループ上の全てのハンドラ* に対してシグナルを送信します! ハンドラを初期化し、ループに関連付けるために``uv_signal_init()`` を使用してください。特定のシグナルを待ち受けるために、ハンドラ関数とともに ``uv_signal_start()`` を使用してください。 各ハンドラは一つのシグナル番号に対してのみ関連付け、 ``uv_signal_start()`` を続けて呼び出すことで、以前の関連付けを上書きすることができます。監視を中止するためには ``uv_signal_stop()`` を使用してください。以下はいろいろな使い方を示した小さな例です :
 
 .. rubric:: signal/main.c
 .. literalinclude:: ../code/signal/main.c
@@ -155,43 +112,27 @@ stop watching. Here is a small example demonstrating the various possibilities:
     pending events, while UV_RUN_NOWAIT will return immediately. We use NOWAIT
     so that one of the loops isn't starved because the other one has no pending
     activity.
+    
+    ``uv_run(loop, UV_RUN_NOWAIT)`` は これがたった一つのイベントしか処理しない点で ``uv_run(loop, UV_RUN_ONCE)`` と同様です。UV_RUN_NOWAITがすぐに制御を戻すのに対し、 UV_RUN_ONCEは保留されたイベントがない場合にブロックします。NOWAITは他のループが保留された処理を持っていないという理由でループがロック(starved)しないようにするために用いることができます。
 
-Send ``SIGUSR1`` to the process, and you'll find the handler being invoked
-4 times, one for each ``uv_signal_t``. The handler just stops each handle,
-so that the program exits. This sort of dispatch to all handlers is very
-useful. A server using multiple event loops could ensure that all data was
-safely saved before termination, simply by every loop adding a watcher for
-``SIGINT``.
+``SIGUSR1`` をプロセスに送信すると、各 ``uv_signal_t`` で１つずつ、4回ハンドラが起動していることを確認することができます。ハンドラはプログラムを終了するために各ハンドルを停止するだけです。全てのハンドラに対してのこの種の送信はとても有用です。単純に各イベントループに ``SIGINT`` のためのウォッチャを追加するだけで、複数のイベントループを使用するサーバは終了する前にデータが安全に保存されることを保証できます。
 
 Child Process I/O
 -----------------
 
-A normal, newly spawned process has its own set of file descriptors, with 0,
-1 and 2 being ``stdin``, ``stdout`` and ``stderr`` respectively. Sometimes you
-may want to share file descriptors with the child. For example, perhaps your
-applications launches a sub-command and you want any errors to go in the log
-file, but ignore ``stdout``. For this you'd like to have ``stderr`` of the
-child to be displayed. In this case, libuv supports *inheriting* file
-descriptors. In this sample, we invoke the test program, which is:
+通常の、新規に起動したプロセスは自分自身のファイルディスクリプタのセットを持っており、0、1、2、はそれぞれ ``stdin`` 、 ``stdout`` 、 ``stderr`` に対応しています。ときどきファイルディスクリプタを子プロセスと共有したい場合があります。例えば、アプリケーションはサブコマンドを起動し、発生したエラーをログファイルに書きたいが ``stdout`` は無視したいかもしれません。このために子プロセスの ``stderr`` を表示したいとします。この場合、libuvはファイルディスクリプタの *継承*  をサポートしています。この例では、下記のようなテストプログラムを起動します:
 
 .. rubric:: proc-streams/test.c
 .. literalinclude:: ../code/proc-streams/test.c
 
-The actual program ``proc-streams`` runs this while inheriting only ``stderr``.
-The file descriptors of the child process are set using the ``stdio`` field in
-``uv_process_options_t``. First set the ``stdio_count`` field to the number of
-file descriptors being set. ``uv_process_options_t.stdio`` is an array of
-``uv_stdio_container_t``, which is:
+実際のプログラムである ``proc-streams`` は ``stderr`` のみを継承して実行されます。 ``uv_process_options_t`` の ``stdio`` フィールドを使用することで子プロセスのファイルディスクリプタは設定されます。最初に ``stdio_count`` フィールドに設定するファイルディスクリプタの数を設定します。 ``uv_process_options_t.stdio`` は ``uv_stdio_container_t`` の配列であり、下記のようになります:
 
 .. literalinclude:: ../libuv/include/uv.h
     :lines: 1263-1270
 
-where flags can have several values. Use ``UV_IGNORE`` if it isn't going to be
-used. If the first three ``stdio`` fields are marked as ``UV_IGNORE`` they'll
-redirect to ``/dev/null``.
+ここで、フラグはいくつかの値を持つことができます。 これが使われない場合に ``UV_IGNORE`` を用いてください。もし最初の3つの ``stdio`` フィールドが ``UV_IGNORE`` に設定された場合、これらは ``/dev/null`` にリダイレクトされます。
 
-Since we want to pass on an existing descriptor, we'll use ``UV_INHERIT_FD``.
-Then we set the ``fd`` to ``stderr``.
+既存のディスクリプタに渡したいため、 ``UV_INHERIT_FD`` を使用します。それから ``fd`` を ``stderr`` に設定します。
 
 .. rubric:: proc-streams/main.c
 .. literalinclude:: ../code/proc-streams/main.c
@@ -199,23 +140,18 @@ Then we set the ``fd`` to ``stderr``.
     :lines: 15-17,27-
     :emphasize-lines: 6,10,11,12
 
-If you run ``proc-stream`` you'll see that only the line "This is stderr" will
-be displayed. Try marking ``stdout`` as being inherited and see the output.
+``proc-stream`` を実行すると、"This is stderr" という行だけが表示されます。 ``stdout`` を継承するように設定して出力を確認してください。
 
-It is dead simple to apply this redirection to streams.  By setting ``flags``
-to ``UV_INHERIT_STREAM`` and setting ``data.stream`` to the stream in the
-parent process, the child process can treat that stream as standard I/O. This
-can be used to implement something like CGI_.
+これはこのようなストリームのリダイレクションを適用したあまり感動のない単純なものです。 ``flags`` を ``UV_INHERIT_STREAM`` に設定し、 ``data.stream`` を親プロセスのストリームに設定することにより、子プロセスはそのプロセスを標準I/Oとして扱うことができます。これは CGI_ のようなものを実装するのに使用できます。
 
 .. _CGI: http://en.wikipedia.org/wiki/Common_Gateway_Interface
 
-A sample CGI script/executable is:
+CGI スクリプト/実行ファイルの例は以下になります:
 
 .. rubric:: cgi/tick.c
 .. literalinclude:: ../code/cgi/tick.c
 
-The CGI server combines the concepts from this chapter and :doc:`networking` so
-that every client is sent ten ticks after which that connection is closed.
+このCGIサーバは、この章のコンセプトと :doc:`ネットワーク` を結びつけており、全てのクライアントは接続が閉じられるまでに10回"tick"を受信します。
 
 .. rubric:: cgi/main.c
 .. literalinclude:: ../code/cgi/main.c
@@ -223,8 +159,7 @@ that every client is sent ten ticks after which that connection is closed.
     :lines: 47,53-62
     :emphasize-lines: 5
 
-Here we simply accept the TCP connection and pass on the socket (*stream*) to
-``invoke_cgi_script``.
+ここでTCP接続を受け付け、 ``invoke_cgi_script`` にソケット (*stream*) を渡します。
 
 .. rubric:: cgi/main.c
 .. literalinclude:: ../code/cgi/main.c
@@ -232,57 +167,40 @@ Here we simply accept the TCP connection and pass on the socket (*stream*) to
     :lines: 16, 25-45
     :emphasize-lines: 8-9,17-18
 
-The ``stdout`` of the CGI script is set to the socket so that whatever our tick
-script prints, gets sent to the client. By using processes, we can offload the
-read/write buffering to the operating system, so in terms of convenience this
-is great. Just be warned that creating processes is a costly task.
+CGIスクリプトの ``stdout`` はtickスクリプトが出力する全ての内容をクライアントに送信させるためにソケットに設定されています。プロセスを用いることにより、read/writeのバッファリングをOSに任せることができ、これは簡単さの観点では素晴らしいことです。ただ、プロセスの生成はコストがかかる処理であることは肝に命じてください。
 
 .. _pipes:
 
-Pipes
+パイプ
 -----
 
 libuv's ``uv_pipe_t`` structure is slightly confusing to Unix programmers,
 because it immediately conjures up ``|`` and `pipe(7)`_. But ``uv_pipe_t`` is
 not related to anonymous pipes, rather it has two uses:
 
-#. Stream API - It acts as the concrete implementation of the ``uv_stream_t``
-   API for providing a FIFO, streaming interface to local file I/O. This is
-   performed using ``uv_pipe_open`` as covered in :ref:`buffers-and-streams`.
-   You could also use it for TCP/UDP, but there are already convenience functions
-   and structures for them.
+libuvの ``uv_pipe_t`` 構造体はUnixプログラマーを少し混乱させるもので、なぜならこれはすぐに ``|`` と `pipe(7)`_ を呼び出すからです。しかし ``uv_pipe_t`` は無名パイプとは関連がなく、これは2つを用いています:
 
-#. IPC mechanism - ``uv_pipe_t`` can be backed by a `Unix Domain Socket`_ or
-   `Windows Named Pipe`_ to allow multiple processes to communicate. This is
-   discussed below.
+#. ストリームAPI - これは ``uv_stream_t`` の具体的な実装として実行されるものです。FIFOを提供するためのAPIであり、ローカルファイルのI/Oに対するストリーミングインターフェイスです。これは :ref:`buffers-and-streams` で言及される ``uv_pipe_open`` を用いて処理されます。これをTCP/UDPのためにも用いることができますが、この目的のためには既に便利な関数と構造体が用意されています。
+
+#. IPC機構 - ``uv_pipe_t`` は `Unixドメインソケット`_ か `Windowsの名前付きパイプ` を複数のプロセスが通信できるように利用することができます。
 
 .. _pipe(7): http://www.kernel.org/doc/man-pages/online/pages/man7/pipe.7.html
-.. _Unix Domain Socket: http://www.kernel.org/doc/man-pages/online/pages/man7/unix.7.html
-.. _Windows Named Pipe: http://msdn.microsoft.com/en-us/library/windows/desktop/aa365590(v=vs.85).aspx
+.. _Unixドメインソケットt: http://www.kernel.org/doc/man-pages/online/pages/man7/unix.7.html
+.. _Windowsの名前付きパイプ: http://msdn.microsoft.com/en-us/library/windows/desktop/aa365590(v=vs.85).aspx
 
-Parent-child IPC
+親-子のIPC
 ++++++++++++++++
 
-A parent and child can have one or two way communication over a pipe created by
-settings ``uv_stdio_container_t.flags`` to a bit-wise combination of
-``UV_CREATE_PIPE`` and ``UV_READABLE_PIPE`` or ``UV_WRITABLE_PIPE``. The
-read/write flag is from the perspective of the child process.
+親と子はパイプを通じた一方向もしくは双方向の通信を行うことができ、パイプは ``uv_stdio_container_t.flags`` にビット単位の``UV_CREATE_PIPE`` と ``UV_READABLE_PIPE`` もしくは ``UV_WRITABLE_PIPE`` の組み合わせを設定することによって作成することができます。read/writeフラグは子プロセス側の観点のフラグです。
 
-Arbitrary process IPC
+任意のプロセスのIPC
 +++++++++++++++++++++
 
-Since domain sockets [#]_ can have a well known name and a location in the
-file-system they can be used for IPC between unrelated processes. The D-BUS_
-system used by open source desktop environments uses domain sockets for event
-notification. Various applications can then react when a contact comes online
-or new hardware is detected. The MySQL server also runs a domain socket on
-which clients can interact with it.
+ドメインソケットはファイルシステム内にウェルノウンネームとロケーションを持つことができるため関連のないプロセス間でIPCを使用することができます。 オープンソースのデスクトップ環境で使用されている D-BUS_ システムはイベント通知のためにドメインソケットを使用しています。さまざまなアプリケーションがオンライン上のコンタクトが来た時や新しいハードウェアが検知された時に反応することができます。MySQLサーバもクライアントとやりとりするドメインソケットを実行します。
 
 .. _D-BUS: http://www.freedesktop.org/wiki/Software/dbus
 
-When using domain sockets, a client-server pattern is usually followed with the
-creator/owner of the socket acting as the server. After the initial setup,
-messaging is no different from TCP, so we'll re-use the echo server example.
+ドメインソケットを使用するとき、クライアント-サーバパターンが使用され、ソケットの作成者/オーナがサーバとして動作します。初期化の後は、通信の方法はTCPと変わりがありませんので、エコーサーバの例をもう一度持ち出します。
 
 .. rubric:: pipe-echo-server/main.c
 .. literalinclude:: ../code/pipe-echo-server/main.c
@@ -290,40 +208,30 @@ messaging is no different from TCP, so we'll re-use the echo server example.
     :lines: 56-
     :emphasize-lines: 5,9,13
 
-We name the socket ``echo.sock`` which means it will be created in the local
-directory. This socket now behaves no different from TCP sockets as far as
-the stream API is concerned. You can test this server using `netcat`_::
+ソケットにはローカルディレクトリに作成されるという意味で ``echo.sock`` と名前をつけました。このソケットはストリームAPIが関係する限りはTCPソケットと変わらない振る舞いをします。このサーバは `netcat`_ を用いてサーバをテストすることができます::
 
     $ nc -U /path/to/echo.sock
 
-A client which wants to connect to a domain socket will use::
+ドメインソケットに接続したいクライアントは以下を使用します::
 
     void uv_pipe_connect(uv_connect_t *req, uv_pipe_t *handle, const char *name, uv_connect_cb cb);
 
-where ``name`` will be ``echo.sock`` or similar.
+ここで ``name`` は ``echo.sock`` もしくは同様のものです。
 
 .. _netcat: http://netcat.sf.net
 
 Sending file descriptors over pipes
 +++++++++++++++++++++++++++++++++++
 
-The cool thing about domain sockets is that file descriptors can be exchanged
-between processes by sending them over a domain socket. This allows processes
-to hand off their I/O to other processes. Applications include load-balancing
-servers, worker processes and other ways to make optimum use of CPU.
+ドメインソケットのクールな点はドメインソケットを介して送信することによりファイルディスクリプタを交換できる点です。これはプロセスに他のプロセス間でI/Oを受け渡すことを可能にします。ロードバランスを行うサーバ、ワーカプロセスや他の手法を含むアプリケーションは最適なCPU利用を行うことができます。
 
 .. warning::
 
-    On Windows, only file descriptors representing TCP sockets can be passed
-    around.
+    Windows上ではTCPソケットを表すファイルディスクリプタだけを受け渡しすることができます。
 
-To demonstrate, we will look at a echo server implementation that hands of
-clients to worker processes in a round-robin fashion. This program is a bit
-involved, and while only snippets are included in the book, it is recommended
-to read the full code to really understand it.
+実演するために、ラウンドロビン方式でクライアントをワーカプロセスに引き渡すエコーサーバの実装を見てみましょう。このプログラムは少し複雑で、書籍内には少しのスニペットしかないので、本当に理解するには全てのコードを読むことをおすすめします。
 
-The worker process is quite simple, since the file-descriptor is handed over to
-it by the master.
+ファイルディスクリプタがマスターから渡されるので、ワーカプロセスは本当に単純です。
 
 .. rubric:: multi-echo-server/worker.c
 .. literalinclude:: ../code/multi-echo-server/worker.c
@@ -331,12 +239,7 @@ it by the master.
     :lines: 7-9,53-
     :emphasize-lines: 7-9
 
-``queue`` is the pipe connected to the master process on the other end, along
-which new file descriptors get sent. We use the ``read2`` function to express
-interest in file descriptors. It is important to set the ``ipc`` argument of
-``uv_pipe_init`` to 1 to indicate this pipe will be used for inter-process
-communication! Since the master will write the file handle to the standard
-input of the worker, we connect the pipe to ``stdin`` using ``uv_pipe_open``.
+一方、 ``queue`` は　マスタープロセスに接続されたパイプであり、送信された新しいファイルディスクリプタです。 ``read2`` 関数を用いてファイルディスクリプタに対する興味(interest)を表現します。　``uv_pipe_init()`` の ``ipc`` 引数を1に設定することが重要で、これはパイプがプロセス間通信に使用されることを表します! マスターはファイルハンドルをワーカの標準入力に書き込むため、パイプを ``uv_pipe_open`` を用いて ``stdin`` に接続します。
 
 .. rubric:: multi-echo-server/worker.c
 .. literalinclude:: ../code/multi-echo-server/worker.c
@@ -344,22 +247,16 @@ input of the worker, we connect the pipe to ``stdin`` using ``uv_pipe_open``.
     :lines: 36-52
     :emphasize-lines: 9
 
-Although ``accept`` seems odd in this code, it actually makes sense. What
-``accept`` traditionally does is get a file descriptor (the client) from
-another file descriptor (The listening socket). Which is exactly what we do
-here. Fetch the file descriptor (``client``) from ``queue``. From this point
-the worker does standard echo server stuff.
+``accept``はこのコード内で奇妙に思えますが、これは的を得ているものです。 ``accept`` がしていることは、伝統的に他のファイルディスクリプタ(リスニングソケット)からファイルディスクリプタ(クライアント)を得ることだからです。これはまさにここでしていることです。 ``queue`` からファイルディスクリプタ (``client``) を取得してください。ここからはワーカは標準的なエコーサーバの内容を行います。
 
-Turning now to the master, let's take a look at how the workers are launched to
-allow load balancing.
+マスターに戻って、ロードバランスを可能にするためにワーカがどのように起動されるかを見てみましょう。
 
 .. rubric:: multi-echo-server/main.c
 .. literalinclude:: ../code/multi-echo-server/main.c
     :linenos:
     :lines: 6-13
 
-The ``child_worker`` structure wraps the process, and the pipe between the
-master and the individual process.
+``child_worker`` 構造体はプロセスと、マスターと各プロセスの間のパイプをラップしています。
 
 .. rubric:: multi-echo-server/main.c
 .. literalinclude:: ../code/multi-echo-server/main.c
@@ -367,17 +264,9 @@ master and the individual process.
     :lines: 49,61-93
     :emphasize-lines: 15,18-19
 
-In setting up the workers, we use the nifty libuv function ``uv_cpu_info`` to
-get the number of CPUs so we can launch an equal number of workers. Again it is
-important to initialize the pipe acting as the IPC channel with the third
-argument as 1. We then indicate that the child process' ``stdin`` is to be
-a readable pipe (from the point of view of the child). Everything is
-straightforward till here. The workers are launched and waiting for file
-descriptors to be written to their pipes.
+ワーカの準備の中で、 ``uv_cpu_info`` というちょっとかっこいい関数を使っており、これはCPUの数を取得することができるのでワーカの数をこれと同じにすることができます。再度第三引数を1にしてパイプをIPCとして初期化することの重要性を述べておきます。それから子プロセスの ``stdin`` を(子プロセスの観点から)読み取り可能なパイプであることを指定します。ここまで全て正攻法です。ワーカは起動し、パイプにファイルディスクリプタが書き込まれるを待ちます。
 
-It is in ``on_new_connection`` (the TCP infrastructure is initialized in
-``main()``), that we accept the client socket and pass it along to the next
-worker in the round-robin.
+``on_new_connection`` (TCP周りは ``main()`` で初期化されています)で、クライアントソケットを待ち受け、ラウンドロビンの中の次のワーカにソケットを渡します。
 
 .. rubric:: multi-echo-server/main.c
 .. literalinclude:: ../code/multi-echo-server/main.c
@@ -385,13 +274,10 @@ worker in the round-robin.
     :lines: 29-47
     :emphasize-lines: 9,12-13
 
-Again, the ``uv_write2`` call handles all the abstraction and it is simply
-a matter of passing in the file descriptor as the right argument. With this our
-multi-process echo server is operational.
+もう一度、 ``uv_write2`` が全ての抽象化を制御し、正しい引数としてファイルディスクリプタを渡すことが問題であることを述べておきます。これでマルチプロセスのエコーサーバの出来上がりです。
 
 TODO what do the write2/read2 functions do with the buffers?
 
 ----
 
-.. [#] In this section domain sockets stands in for named pipes on Windows as
-    well.
+.. [#] 同様にこの章ではドメインソケットはWindows上では名前付きパイプを用いて実装されています。
